@@ -108,6 +108,18 @@ ipcMain.handle('translate', async (_event, { text, from, to }) => {
   return { translated, detected };
 });
 
+ipcMain.handle('tts', async (_event, { text, lang }) => {
+  const url =
+    'https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=' +
+    encodeURIComponent(lang) +
+    '&q=' +
+    encodeURIComponent(text);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('TTS request failed: ' + res.status);
+  const buf = Buffer.from(await res.arrayBuffer());
+  return 'data:audio/mpeg;base64,' + buf.toString('base64');
+});
+
 ipcMain.on('hide-window', () => win && win.hide());
 ipcMain.on('quit-app', () => {
   app.isQuiting = true;

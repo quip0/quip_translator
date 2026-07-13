@@ -222,18 +222,29 @@
     translate();
   });
 
-  // --- text-to-speech (macOS system voices via Web Speech API) ---
-  function speak(text, lang, btn) {
+  // --- text-to-speech: Google TTS (correct voice per language),
+  //     macOS system voice as offline fallback ---
+  let player = null;
+  async function speak(text, lang, btn) {
     if (!text) return;
+    if (player && !player.paused) { player.pause(); player = null; btn.classList.remove('playing'); return; }
     if (speechSynthesis.speaking) { speechSynthesis.cancel(); return; }
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = lang;
-    const voice = speechSynthesis.getVoices()
-      .find((v) => v.lang.replace('_', '-').toLowerCase().startsWith(lang.toLowerCase()));
-    if (voice) u.voice = voice;
-    u.onstart = () => btn.classList.add('playing');
-    u.onend = u.onerror = () => btn.classList.remove('playing');
-    speechSynthesis.speak(u);
+    try {
+      const src = await window.api.tts({ text: text.slice(0, 200), lang });
+      player = new Audio(src);
+      btn.classList.add('playing');
+      player.onended = player.onerror = () => btn.classList.remove('playing');
+      await player.play();
+    } catch {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = lang;
+      const voice = speechSynthesis.getVoices()
+        .find((v) => v.lang.replace('_', '-').toLowerCase().startsWith(lang.toLowerCase()));
+      if (voice) u.voice = voice;
+      u.onstart = () => btn.classList.add('playing');
+      u.onend = u.onerror = () => btn.classList.remove('playing');
+      speechSynthesis.speak(u);
+    }
   }
   const speakIn = document.getElementById('speak-in');
   const speakOut = document.getElementById('speak-out');
