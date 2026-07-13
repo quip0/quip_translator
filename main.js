@@ -1,8 +1,23 @@
-const { app, BrowserWindow, globalShortcut, ipcMain, screen } = require('electron');
+const { app, BrowserWindow, globalShortcut, ipcMain, screen, Tray, Menu, nativeImage } = require('electron');
 const path = require('path');
 
 const SHORTCUT = 'CommandOrControl+Shift+T';
 let win = null;
+let tray = null;
+
+function createTray() {
+  tray = new Tray(nativeImage.createEmpty());
+  tray.setTitle('文A'); // text-based menu bar icon
+  tray.setToolTip('Translator — ⌘⇧T');
+  const menu = Menu.buildFromTemplate([
+    { label: 'Show / Hide  ⌘⇧T', click: toggleWindow },
+    { type: 'separator' },
+    { label: 'Quit', click: () => { app.isQuiting = true; app.quit(); } }
+  ]);
+  // left-click toggles the widget, right-click opens the menu
+  tray.on('click', toggleWindow);
+  tray.on('right-click', () => tray.popUpContextMenu(menu));
+}
 
 function createWindow() {
   const { width } = screen.getPrimaryDisplay().workAreaSize;
@@ -53,6 +68,7 @@ function toggleWindow() {
 
 app.whenReady().then(() => {
   createWindow();
+  createTray();
 
   // Keep the app out of the macOS Dock — it's a background widget
   if (process.platform === 'darwin') app.dock.hide();
