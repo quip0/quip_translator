@@ -81,8 +81,24 @@
   }
   #swap:hover { color: var(--yellow); }
 
-  .pane-label { color: var(--gray); user-select: none; padding: 4px 0 2px; }
+  .pane-label {
+    color: var(--gray);
+    user-select: none;
+    padding: 4px 0 2px;
+    display: flex;
+    justify-content: space-between;
+  }
   .pane-label .accent { color: var(--green); }
+  .speak {
+    background: none;
+    border: none;
+    font: inherit;
+    color: var(--gray);
+    cursor: pointer;
+    padding: 0 2px;
+  }
+  .speak:hover { color: var(--yellow); }
+  .speak.playing { color: var(--orange); }
 
   textarea, #output {
     width: 100%;
@@ -132,9 +148,9 @@
     <label>to:</label>
     <select id="to"></select>
   </div>
-  <div class="pane-label">┌─ <span class="accent">input</span></div>
+  <div class="pane-label"><span>┌─ <span class="accent">input</span></span><button class="speak" id="speak-in" title="Speak input">[▶]</button></div>
   <textarea id="input" placeholder="type to translate…" spellcheck="false"></textarea>
-  <div class="pane-label">┌─ <span class="accent">output</span></div>
+  <div class="pane-label"><span>┌─ <span class="accent">output</span></span><button class="speak" id="speak-out" title="Speak translation">[▶]</button></div>
   <div id="output"></div>
   <div class="statusbar">
     <span id="status"></span>
@@ -164,6 +180,7 @@
 
   let timer = null;
   let seq = 0;
+  let lastDetected = null;
   async function translate() {
     const text = input.value.trim();
     if (!text) { output.textContent = ''; setStatus(''); return; }
@@ -174,6 +191,7 @@
         text, from: fromSel.value, to: toSel.value
       });
       if (id !== seq) return; // stale response
+      lastDetected = detected;
       output.textContent = translated;
       setStatus(fromSel.value === 'auto' && detected
         ? 'detected: ' + (LANGS[detected] || detected) : '');
@@ -203,6 +221,28 @@
     if (output.textContent) input.value = output.textContent;
     translate();
   });
+
+  // --- text-to-speech (macOS system voices via Web Speech API) ---
+  function speak(text, lang, btn) {
+    if (!text) return;
+    if (speechSynthesis.speaking) { speechSynthesis.cancel(); return; }
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = lang;
+    const voice = speechSynthesis.getVoices()
+      .find((v) => v.lang.replace('_', '-').toLowerCase().startsWith(lang.toLowerCase()));
+    if (voice) u.voice = voice;
+    u.onstart = () => btn.classList.add('playing');
+    u.onend = u.onerror = () => btn.classList.remove('playing');
+    speechSynthesis.speak(u);
+  }
+  const speakIn = document.getElementById('speak-in');
+  const speakOut = document.getElementById('speak-out');
+  speakIn.addEventListener('click', () => {
+    const lang = fromSel.value === 'auto' ? (lastDetected || 'en') : fromSel.value;
+    speak(input.value.trim(), lang, speakIn);
+  });
+  speakOut.addEventListener('click', () => speak(output.textContent, toSel.value, speakOut));
+  speechSynthesis.getVoices(); // warm up the voice list
 
   document.getElementById('quit').addEventListener('click', () => window.api.quit());
   document.addEventListener('keydown', (e) => {
