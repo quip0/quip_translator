@@ -23,6 +23,10 @@ function createWindow() {
     }
   });
 
+  // Float above everything, including other apps' fullscreen spaces
+  win.setAlwaysOnTop(true, 'screen-saver');
+  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+
   win.loadFile('index.html');
 
   // Hide instead of closing so the shortcut keeps working

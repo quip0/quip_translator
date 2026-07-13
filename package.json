@@ -4,7 +4,9 @@
   "description": "Small always-on-top translator widget toggled with a global shortcut",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "autostart": "node scripts/autostart.js install",
+    "autostart:remove": "node scripts/autostart.js uninstall"
   },
   "devDependencies": {
     "electron": "^33.0.0"
