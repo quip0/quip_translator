@@ -1,0 +1,85 @@
+const { app, BrowserWindow, globalShortcut, ipcMain, screen } = require('electron');
+const path = require('path');
+
+const SHORTCUT = 'CommandOrControl+Shift+T';
+let win = null;
+
+function createWindow() {
+  const { width } = screen.getPrimaryDisplay().workAreaSize;
+  win = new BrowserWindow({
+    width: 420,
+    height: 340,
+    x: width - 440,
+    y: 40,
+    show: false,
+    frame: false,
+    resizable: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    fullscreenable: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true
+    }
+  });
+
+  win.loadFile('index.html');
+
+  // Hide instead of closing so the shortcut keeps working
+  win.on('close', (e) => {
+    if (!app.isQuiting) {
+      e.preventDefault();
+      win.hide();
+    }
+  });
+
+  win.on('blur', () => win.hide());
+}
+
+function toggleWindow() {
+  if (!win) return;
+  if (win.isVisible()) {
+    win.hide();
+  } else {
+    win.show();
+    win.focus();
+    win.webContents.send('focus-input');
+  }
+}
+
+app.whenReady().then(() => {
+  createWindow();
+
+  // Keep the app out of the macOS Dock — it's a background widget
+  if (process.platform === 'darwin') app.dock.hide();
+
+  const ok = globalShortcut.register(SHORTCUT, toggleWindow);
+  if (!ok) console.error('Failed to register global shortcut', SHORTCUT);
+});
+
+app.on('will-quit', () => globalShortcut.unregisterAll());
+
+// Don't quit when the window is hidden
+app.on('window-all-closed', (e) => e.preventDefault());
+
+ipcMain.handle('translate', async (_event, { text, from, to }) => {
+  const url =
+    'https://translate.googleapis.com/translate_a/single?client=gtx&sl=' +
+    encodeURIComponent(from) +
+    '&tl=' +
+    encodeURIComponent(to) +
+    '&dt=t&q=' +
+    encodeURIComponent(text);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Translation request failed: ' + res.status);
+  const data = await res.json();
+  const translated = data[0].map((seg) => seg[0]).join('');
+  const detected = data[2] || from;
+  return { translated, detected };
+});
+
+ipcMain.on('hide-window', () => win && win.hide());
+ipcMain.on('quit-app', () => {
+  app.isQuiting = true;
+  app.quit();
+});
