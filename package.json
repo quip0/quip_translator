@@ -5,6 +5,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "restart": "launchctl kickstart -k gui/$(id -u)/com.quipo.translator",
     "autostart": "node scripts/autostart.js install",
     "autostart:remove": "node scripts/autostart.js uninstall"
   },
