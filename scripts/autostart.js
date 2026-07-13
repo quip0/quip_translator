@@ -9,7 +9,12 @@ const { execSync } = require('child_process');
 
 const LABEL = 'com.quipo.translator';
 const appDir = path.join(__dirname, '..');
-const electronBin = path.join(appDir, 'node_modules', '.bin', 'electron');
+// Use the real Electron binary, not the node_modules/.bin shim — the shim
+// needs `node` on PATH, which launchd does not have at login.
+const electronBin = path.join(
+  appDir, 'node_modules', 'electron', 'dist',
+  'Electron.app', 'Contents', 'MacOS', 'Electron'
+);
 const plistPath = path.join(os.homedir(), 'Library', 'LaunchAgents', `${LABEL}.plist`);
 
 const plist = `<?xml version="1.0" encoding="UTF-8"?>

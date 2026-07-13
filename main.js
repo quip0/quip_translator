@@ -28,6 +28,10 @@ function createWindow() {
     y: 40,
     show: false,
     frame: false,
+    // NSPanel: required on macOS for the window to appear over
+    // other apps' fullscreen spaces instead of switching to them
+    type: 'panel',
+    hiddenInMissionControl: true,
     resizable: false,
     alwaysOnTop: true,
     skipTaskbar: true,
@@ -38,9 +42,12 @@ function createWindow() {
     }
   });
 
-  // Float above everything, including other apps' fullscreen spaces
+  // Float above everything, including other apps' fullscreen spaces.
+  // fullScreenable must be off before setVisibleOnAllWorkspaces or the
+  // visibleOnFullScreen flag is ignored.
+  win.setFullScreenable(false);
   win.setAlwaysOnTop(true, 'screen-saver');
-  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
 
   win.loadFile('index.html');
 
@@ -60,6 +67,8 @@ function toggleWindow() {
   if (win.isVisible()) {
     win.hide();
   } else {
+    // re-assert level each show; macOS can demote it
+    win.setAlwaysOnTop(true, 'screen-saver');
     win.show();
     win.focus();
     win.webContents.send('focus-input');
@@ -67,11 +76,12 @@ function toggleWindow() {
 }
 
 app.whenReady().then(() => {
+  // Keep the app out of the macOS Dock — it's a background widget.
+  // Must happen before window creation for fullscreen overlay to work.
+  if (process.platform === 'darwin') app.dock.hide();
+
   createWindow();
   createTray();
-
-  // Keep the app out of the macOS Dock — it's a background widget
-  if (process.platform === 'darwin') app.dock.hide();
 
   const ok = globalShortcut.register(SHORTCUT, toggleWindow);
   if (!ok) console.error('Failed to register global shortcut', SHORTCUT);
