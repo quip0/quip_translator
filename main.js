@@ -22,8 +22,8 @@ function createTray() {
 function createWindow() {
   const { width } = screen.getPrimaryDisplay().workAreaSize;
   win = new BrowserWindow({
-    width: 420,
-    height: 340,
+    width: 440,
+    height: 380,
     x: width - 440,
     y: 40,
     show: false,

@@ -10,59 +10,55 @@
     --bg1: #282828;
     --bg2: #3c3836;
     --fg:  #ebdbb2;
-    --fg-dim: #a89984;
     --gray: #928374;
     --yellow: #fabd2f;
     --green: #b8bb26;
     --aqua: #8ec07c;
-    --blue: #83a598;
     --orange: #fe8019;
     --red: #fb4934;
+    --blue: #83a598;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: "JetBrains Mono", "SF Mono", Menlo, Monaco, monospace;
     font-size: 13px;
+    line-height: 1.5;
     background: var(--bg0);
     color: var(--fg);
     height: 100vh;
     display: flex;
     flex-direction: column;
-    padding: 8px 10px;
-    border: 2px solid var(--bg2);
+    gap: 14px;
+    padding: 16px 18px;
   }
   ::selection { background: var(--bg2); }
-
-  .titlebar {
-    -webkit-app-region: drag;
-    display: flex;
-    justify-content: space-between;
-    color: var(--gray);
-    padding-bottom: 6px;
-    user-select: none;
-  }
-  .titlebar .title { color: var(--yellow); }
-  .titlebar button {
-    -webkit-app-region: no-drag;
+  button {
     background: none;
     border: none;
     font: inherit;
     color: var(--gray);
     cursor: pointer;
+    -webkit-app-region: no-drag;
   }
-  .titlebar button:hover { color: var(--red); }
+  button:hover { color: var(--yellow); }
 
-  .rule { color: var(--bg2); white-space: nowrap; overflow: hidden; user-select: none; }
+  .titlebar {
+    -webkit-app-region: drag;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--gray);
+    user-select: none;
+  }
+  #quit:hover { color: var(--red); }
 
   .langs {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 0;
+    gap: 10px;
+    user-select: none;
   }
-  .langs label { color: var(--gray); user-select: none; }
   select {
-    flex: 1;
     background: var(--bg0);
     color: var(--aqua);
     border: none;
@@ -72,89 +68,73 @@
     appearance: none;
     -webkit-appearance: none;
   }
-  #swap {
-    background: none;
-    border: none;
-    font: inherit;
-    color: var(--orange);
-    cursor: pointer;
-  }
-  #swap:hover { color: var(--yellow); }
+  #swap { color: var(--orange); }
 
-  .pane-label {
-    color: var(--gray);
-    user-select: none;
-    padding: 4px 0 2px;
-    display: flex;
-    justify-content: space-between;
-  }
-  .pane-label .accent { color: var(--green); }
-  .speak {
-    background: none;
-    border: none;
-    font: inherit;
-    color: var(--gray);
-    cursor: pointer;
-    padding: 0 2px;
-  }
-  .speak:hover { color: var(--yellow); }
-  .speak.playing { color: var(--orange); }
-
+  .pane { position: relative; display: flex; }
   textarea, #output {
     width: 100%;
     background: var(--bg0);
     color: var(--fg);
-    border: 1px solid var(--bg2);
-    padding: 6px 8px;
+    border: none;
+    border-left: 2px solid var(--bg2);
+    padding: 2px 26px 2px 12px;
     font: inherit;
     resize: none;
     outline: none;
   }
-  textarea { height: 76px; caret-color: var(--fg); }
-  textarea:focus { border-color: var(--yellow); }
-  textarea::placeholder { color: var(--gray); }
+  textarea { height: 84px; caret-color: var(--yellow); }
+  textarea:focus { border-left-color: var(--yellow); }
+  textarea::placeholder { color: var(--bg2); }
   #output {
+    min-height: 84px;
     flex: 1;
     overflow-y: auto;
     white-space: pre-wrap;
     color: var(--green);
   }
-  #output:empty::before { content: "~"; color: var(--bg2); }
+  .pane.grow { flex: 1; }
+
+  .speak {
+    position: absolute;
+    right: 0;
+    top: 0;
+  }
+  .speak.playing { color: var(--orange); }
 
   .statusbar {
     display: flex;
     justify-content: space-between;
-    padding-top: 6px;
-    color: var(--gray);
+    color: var(--bg2);
     user-select: none;
   }
   #status { color: var(--blue); }
   #status.error { color: var(--red); }
 
-  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-thumb { background: var(--bg2); }
 </style>
 </head>
 <body>
   <div class="titlebar">
-    <span><span class="title">translator</span> <span>— ⌘⇧T</span></span>
-    <button id="quit" title="Quit">[x]</button>
+    <span>translator</span>
+    <button id="quit" title="Quit">×</button>
   </div>
-  <div class="rule">────────────────────────────────────────────────────────────</div>
   <div class="langs">
-    <label>from:</label>
     <select id="from"><option value="auto" selected>auto</option></select>
-    <button id="swap" title="Swap">&lt;-&gt;</button>
-    <label>to:</label>
+    <button id="swap" title="Swap">⇄</button>
     <select id="to"></select>
   </div>
-  <div class="pane-label"><span>┌─ <span class="accent">input</span></span><button class="speak" id="speak-in" title="Speak input">[▶]</button></div>
-  <textarea id="input" placeholder="type to translate…" spellcheck="false"></textarea>
-  <div class="pane-label"><span>┌─ <span class="accent">output</span></span><button class="speak" id="speak-out" title="Speak translation">[▶]</button></div>
-  <div id="output"></div>
+  <div class="pane">
+    <textarea id="input" placeholder="type to translate…" spellcheck="false"></textarea>
+    <button class="speak" id="speak-in" title="Speak input">▶</button>
+  </div>
+  <div class="pane grow">
+    <div id="output"></div>
+    <button class="speak" id="speak-out" title="Speak translation">▶</button>
+  </div>
   <div class="statusbar">
     <span id="status"></span>
-    <span>esc:hide</span>
+    <span>⌘⇧T · esc</span>
   </div>
 
 <script>
